@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>钢包格式转换 · SteelTool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+:root{
+  --bg:#0d0f14;--surface:#161b24;--border:#252d3a;
+  --accent:#e07b00;--accent2:#ff9f1c;--steel:#8fa3b1;
+  --text:#d4dce5;--text-dim:#5a6a78;--danger:#ff4d4f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px);pointer-events:none;z-index:0}
+
+.container{position:relative;z-index:1;max-width:900px;margin:0 auto}
+
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 0 20px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.back-btn{text-decoration:none;color:var(--text-dim);font-size:13px;display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;transition:all 0.15s}
+.back-btn:hover{color:var(--text);border-color:var(--accent)}
+.page-title{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#fff}
+.page-title span{color:var(--accent)}
+
+.section-label{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.section-label .n{width:18px;height:18px;border-radius:50%;background:var(--accent);color:#000;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+textarea{
+  width:100%;font-size:13px;line-height:1.9;padding:12px 14px;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;
+  resize:vertical;font-family:'Noto Sans SC',Consolas,monospace;
+  transition:border 0.2s;
+}
+textarea:focus{outline:none;border-color:var(--accent)}
+textarea::placeholder{color:var(--text-dim)}
+
+/* 按钮区 */
+.btn-group{display:flex;gap:10px;margin:12px 0 24px;flex-wrap:wrap}
+
+.btn{
+  padding:12px 0;font-size:14px;font-weight:500;
+  border:none;border-radius:8px;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;
+  transition:all 0.15s;letter-spacing:1px;
+  flex:1;min-width:140px;
+}
+.btn-main{background:var(--accent);color:#000;font-size:15px}
+.btn-main:hover{background:var(--accent2)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(255,77,79,0.3)}
+.btn-danger:hover{background:rgba(255,77,79,0.1)}
+.btn-copy{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-copy:hover{border-color:var(--accent);color:var(--accent)}
+.btn-copy.copied{background:rgba(82,196,26,0.1);border-color:#52c41a;color:#52c41a}
+
+.output-btns{display:flex;gap:10px;margin-top:10px}
+
+.toast{display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1e2530;color:var(--text);border:1px solid var(--border);padding:10px 22px;border-radius:8px;font-size:13px;z-index:999;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <a class="back-btn" href="index.html">← 返回首页</a>
+    <div class="page-title">📦 钢包格式<span>转换工具</span></div>
+  </div>
+
+  <div class="section-label"><span class="n">1</span> 原始钢包信息（任意格式）</div>
+  <textarea id="src" rows="9" placeholder="粘贴任意格式的钢包信息，如：&#10;2#包龄48次170t  27#包龄31次170t&#10;25号包龄8次出钢量165吨"></textarea>
+
+  <div class="btn-group">
+    <button class="btn btn-main" onclick="convertAndIncrement()">⚙ 转换为标准格式 + 包龄加一</button>
+    <button class="btn btn-danger" onclick="clearSrc()">清除原始信息</button>
+  </div>
+
+  <div class="section-label"><span class="n">2</span> 标准格式输出</div>
+  <textarea id="dst" rows="9" placeholder="转换结果将显示在这里..."></textarea>
+
+  <div class="output-btns">
+    <button class="btn btn-copy" id="copyBtn" onclick="copyDst()">复制输出</button>
+    <button class="btn btn-danger" onclick="clearDst()">清除输出</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+function convert(addOne){
+  let text = document.getElementById("src").value;
+  let result = [];
+  let parts = text.split(/[\n]+/);
+
+  parts.forEach(line => {
+    line = line.trim();
+    if(!line) return;
+
+    // 按空格拆分同一行多个包
+    let segs = line.split(/\s{2,}|\t/);
+    if(segs.length <= 1) segs = [line];
+
+    segs.forEach(seg => {
+      seg = seg.trim();
+      if(!seg) return;
+      if(/备用|小修|大修/.test(seg)) return;
+
+      seg = seg
+        .replace(/＃/g, "#")
+        .replace(/号/g, "#")
+        .replace(/吨/g, "t");
+
+      let m = seg.match(/(\d+)#.*?包龄(\d+).*?(\d+)\s*t/i);
+      if(m){
+        let age = parseInt(m[2]);
+        if(addOne) age += 1;
+        result.push(`钢包号${m[1]}#包龄${age}次要求钢量${m[3]}t`);
+      }
+    });
+  });
+
+  document.getElementById("dst").value = result.join("\n");
+}
+
+function convertAndIncrement(){ convert(true) }
+
+function clearSrc(){ document.getElementById("src").value = "" }
+function clearDst(){ document.getElementById("dst").value = "" }
+
+function copyDst(){
+  let text = document.getElementById("dst").value;
+  if(!text.trim()){ showToast("⚠ 输出内容为空"); return }
+  navigator.clipboard.writeText(text).then(()=>{
+    let btn = document.getElementById("copyBtn");
+    btn.textContent = "✅ 已复制";
+    btn.classList.add("copied");
+    setTimeout(()=>{ btn.textContent = "复制输出"; btn.classList.remove("copied") }, 2000);
+  }).catch(()=>{
+    let ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("已复制到剪贴板");
+  });
+}
+
+function showToast(msg){
+  let el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.display = "block";
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.style.display = "none" }, 2500);
+}
+</script>
+</body>
+</html>

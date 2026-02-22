@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>锰补加计算器 · SteelTool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+:root{
+  --bg:#0d0f14;--surface:#161b24;--border:#252d3a;
+  --accent:#e07b00;--accent2:#ff9f1c;--steel:#8fa3b1;
+  --text:#d4dce5;--text-dim:#5a6a78;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px);pointer-events:none;z-index:0}
+
+.container{position:relative;z-index:1;max-width:520px;margin:0 auto}
+
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 0 20px;border-bottom:1px solid var(--border);margin-bottom:28px}
+.back-btn{text-decoration:none;color:var(--text-dim);font-size:13px;display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;transition:all 0.15s}
+.back-btn:hover{color:var(--text);border-color:var(--accent)}
+.page-title{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#fff}
+.page-title span{color:var(--accent)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.card-title{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px}
+.field input{
+  width:100%;font-family:'Noto Sans SC',Consolas,monospace;
+  font-size:16px;padding:11px 14px;
+  background:#0d0f14;color:var(--text);
+  border:1px solid var(--border);border-radius:8px;
+  transition:border 0.2s;
+}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input.active-input{border-color:var(--accent)}
+.field .hint{font-size:11px;color:var(--text-dim);margin-top:5px}
+
+.tip{
+  font-size:12px;color:var(--text-dim);
+  background:#0d0f14;border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;margin-bottom:16px;
+  letter-spacing:0.5px;
+}
+
+.btn{
+  width:100%;padding:14px 0;font-size:15px;font-weight:500;
+  border:none;border-radius:8px;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;
+  transition:all 0.15s;letter-spacing:1px;margin-bottom:16px;
+}
+.btn-main{background:var(--accent);color:#000}
+.btn-main:hover{background:var(--accent2)}
+
+/* 结果区 */
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;display:none}
+.result-card.show{display:block}
+
+.result-main{
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:16px;
+}
+.result-label{font-size:12px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px}
+.result-value{font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;color:var(--accent2);line-height:1;letter-spacing:2px}
+.result-unit{font-size:18px;color:var(--steel);margin-left:6px;font-family:'Noto Sans SC',sans-serif}
+.result-type{font-size:13px;color:var(--steel);margin-top:8px}
+
+.result-ok{
+  text-align:center;padding:20px 0;
+  font-size:16px;color:#52c41a;font-weight:500;
+}
+
+.formula-block{font-size:12px;color:var(--text-dim);line-height:2;background:#0d0f14;border-radius:8px;padding:14px;border:1px solid var(--border)}
+.formula-block span{color:var(--steel)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <a class="back-btn" href="index.html">← 返回首页</a>
+    <div class="page-title">⚡ 锰补加<span>快速计算器</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">输入参数</div>
+    <div class="field">
+      <label>锰元素成分标准（%）</label>
+      <input type="number" step="0.01" id="targetMn" placeholder="如：1.3">
+    </div>
+    <div class="field">
+      <label>低碳锰铁加入量（kg）</label>
+      <input type="number" id="lowMnFe" placeholder="填此项 → 计算所需硅锰" oninput="clearSiMn()">
+      <div class="hint">输入已加低碳锰铁量，计算还需多少硅锰</div>
+    </div>
+    <div class="field">
+      <label>硅锰加入量（kg）</label>
+      <input type="number" id="siMn" placeholder="填此项 → 计算所需低碳锰铁" oninput="clearLowMnFe()">
+      <div class="hint">输入已加硅锰量，计算还需多少低碳锰铁</div>
+    </div>
+  </div>
+
+  <div class="tip">※ 低碳锰铁和硅锰只填其中一个，系统自动计算另一种需要多少</div>
+
+  <button class="btn btn-main" onclick="calculate()">计算补加量</button>
+
+  <div class="result-card" id="resultCard">
+    <div id="resultContent"></div>
+    <div class="formula-block" id="formulaBlock"></div>
+  </div>
+</div>
+
+<script>
+function clearSiMn(){
+  document.getElementById("siMn").value = "";
+}
+function clearLowMnFe(){
+  document.getElementById("lowMnFe").value = "";
+}
+
+function calculate(){
+  let target  = parseFloat(document.getElementById("targetMn").value);
+  let lowMnFe = parseFloat(document.getElementById("lowMnFe").value);
+  let siMn    = parseFloat(document.getElementById("siMn").value);
+
+  if(isNaN(target)){
+    alert("请输入锰元素成分标准");
+    return;
+  }
+  if(isNaN(lowMnFe) && isNaN(siMn)){
+    alert("请填写低碳锰铁或硅锰其中一个");
+    return;
+  }
+
+  let contentHtml = "";
+  let formulaHtml = "";
+
+  // 正算：已知低碳锰铁 → 计算还需硅锰
+  if(!isNaN(lowMnFe)){
+    let lowMnFeMn = lowMnFe * 0.0005;
+    let remainMn  = target - lowMnFeMn;
+    if(remainMn <= 0){
+      contentHtml = `<div class="result-ok">✓ 低碳锰铁已满足要求<br>无需添加硅锰</div>`;
+      formulaHtml =
+        `<span>计算过程：</span><br>` +
+        `低碳锰铁提供锰 = ${lowMnFe} × 0.0005 = ${lowMnFeMn.toFixed(4)}<br>` +
+        `剩余需锰 = ${target} - ${lowMnFeMn.toFixed(4)} = ${remainMn.toFixed(4)} ≤ 0<br>` +
+        `结论：无需补加硅锰`;
+    } else {
+      let siMnNeed = remainMn / 0.0004;
+      contentHtml = `
+        <div class="result-main">
+          <div class="result-label">还需补加硅锰</div>
+          <div><span class="result-value">${siMnNeed.toFixed(0)}</span><span class="result-unit">kg</span></div>
+          <div class="result-type">已加低碳锰铁 ${lowMnFe} kg → 计算剩余硅锰量</div>
+        </div>`;
+      formulaHtml =
+        `<span>计算过程：</span><br>` +
+        `低碳锰铁提供锰 = ${lowMnFe} × 0.0005 = ${lowMnFeMn.toFixed(4)}<br>` +
+        `剩余需锰 = ${target} - ${lowMnFeMn.toFixed(4)} = ${remainMn.toFixed(4)}<br>` +
+        `需补加硅锰 = ${remainMn.toFixed(4)} ÷ 0.0004 = <span style="color:var(--accent2)">${siMnNeed.toFixed(0)} kg</span>`;
+    }
+  }
+
+  // 反算：已知硅锰 → 计算还需低碳锰铁
+  else {
+    let siMnMn   = siMn * 0.0004;
+    let remainMn = target - siMnMn;
+    if(remainMn <= 0){
+      contentHtml = `<div class="result-ok">✓ 硅锰已满足要求<br>无需添加低碳锰铁</div>`;
+      formulaHtml =
+        `<span>计算过程：</span><br>` +
+        `硅锰提供锰 = ${siMn} × 0.0004 = ${siMnMn.toFixed(4)}<br>` +
+        `剩余需锰 = ${target} - ${siMnMn.toFixed(4)} = ${remainMn.toFixed(4)} ≤ 0<br>` +
+        `结论：无需补加低碳锰铁`;
+    } else {
+      let lowMnFeNeed = remainMn / 0.0005;
+      contentHtml = `
+        <div class="result-main">
+          <div class="result-label">还需补加低碳锰铁</div>
+          <div><span class="result-value">${lowMnFeNeed.toFixed(0)}</span><span class="result-unit">kg</span></div>
+          <div class="result-type">已加硅锰 ${siMn} kg → 计算剩余低碳锰铁量</div>
+        </div>`;
+      formulaHtml =
+        `<span>计算过程：</span><br>` +
+        `硅锰提供锰 = ${siMn} × 0.0004 = ${siMnMn.toFixed(4)}<br>` +
+        `剩余需锰 = ${target} - ${siMnMn.toFixed(4)} = ${remainMn.toFixed(4)}<br>` +
+        `需补加低碳锰铁 = ${remainMn.toFixed(4)} ÷ 0.0005 = <span style="color:var(--accent2)">${lowMnFeNeed.toFixed(0)} kg</span>`;
+    }
+  }
+
+  document.getElementById("resultContent").innerHTML = contentHtml;
+  document.getElementById("formulaBlock").innerHTML = formulaHtml;
+  document.getElementById("resultCard").classList.add("show");
+}
+
+document.addEventListener("keydown", e => { if(e.key === "Enter") calculate(); });
+</script>
+</body>
+</html>

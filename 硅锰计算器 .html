@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>硅锰计算器 · SteelTool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+:root{
+  --bg:#0d0f14;--surface:#161b24;--border:#252d3a;
+  --accent:#e07b00;--accent2:#ff9f1c;--steel:#8fa3b1;
+  --text:#d4dce5;--text-dim:#5a6a78;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px);pointer-events:none;z-index:0}
+
+.container{position:relative;z-index:1;max-width:520px;margin:0 auto}
+
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 0 20px;border-bottom:1px solid var(--border);margin-bottom:28px}
+.back-btn{text-decoration:none;color:var(--text-dim);font-size:13px;display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;transition:all 0.15s}
+.back-btn:hover{color:var(--text);border-color:var(--accent)}
+.page-title{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#fff}
+.page-title span{color:var(--accent)}
+
+/* 输入卡片 */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.card-title{font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px}
+.field input{
+  width:100%;font-family:'Noto Sans SC',Consolas,monospace;
+  font-size:16px;padding:11px 14px;
+  background:#0d0f14;color:var(--text);
+  border:1px solid var(--border);border-radius:8px;
+  transition:border 0.2s;
+}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field .hint{font-size:11px;color:var(--text-dim);margin-top:5px}
+
+/* 按钮 */
+.btn{
+  width:100%;padding:14px 0;font-size:15px;font-weight:500;
+  border:none;border-radius:8px;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;
+  transition:all 0.15s;letter-spacing:1px;margin-bottom:16px;
+}
+.btn-main{background:var(--accent);color:#000}
+.btn-main:hover{background:var(--accent2)}
+
+/* 结果区 */
+.result-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:24px;display:none;
+}
+.result-card.show{display:block}
+
+.result-main{
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:16px;
+}
+.result-label{font-size:12px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px}
+.result-value{
+  font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;
+  color:var(--accent2);line-height:1;letter-spacing:2px;
+}
+.result-unit{font-size:18px;color:var(--steel);margin-left:4px;font-family:'Noto Sans SC',sans-serif}
+
+/* 反推校验区 */
+.verify-block{
+  background:#0d0f14;border:1px solid var(--border);border-radius:8px;padding:16px;
+}
+.verify-title{
+  font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;
+}
+.verify-title::before{content:'↩';color:var(--accent);font-size:13px}
+
+.verify-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.verify-row:last-child{border-bottom:none}
+.verify-row .vk{font-size:13px;color:var(--steel)}
+.verify-row .vv{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;color:#fff;letter-spacing:1px}
+.verify-row .vv.accent{color:var(--accent2)}
+
+/* 计算过程 */
+.formula-block{margin-top:12px;font-size:12px;color:var(--text-dim);line-height:2;background:#0d0f14;border-radius:8px;padding:14px;border:1px solid var(--border)}
+.formula-block span{color:var(--steel)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <a class="back-btn" href="index.html">← 返回首页</a>
+    <div class="page-title">⚗️ 硅锰<span>计算器</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">输入参数</div>
+    <div class="field">
+      <label>实际装量（吨）</label>
+      <input type="number" id="inputA" step="any" placeholder="如：170">
+      <div class="hint">钢包实际装量，单位：吨</div>
+    </div>
+    <div class="field">
+      <label>钢种规格中限（%）</label>
+      <input type="number" id="inputC" step="any" placeholder="如：1.3">
+      <div class="hint">目标钢种的锰成分规格中限，如 1.3</div>
+    </div>
+    <div class="field">
+      <label>终点残余成分（%）</label>
+      <input type="number" id="inputD" step="any" placeholder="默认 0.1" value="0.1">
+      <div class="hint">终点残余锰含量，默认 0.1，可按实际修改</div>
+    </div>
+  </div>
+
+  <button class="btn btn-main" onclick="calculate()">计算硅锰用量</button>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-main">
+      <div class="result-label">所需硅锰用量</div>
+      <div><span class="result-value" id="resultVal">—</span><span class="result-unit">kg</span></div>
+    </div>
+
+    <!-- 平时计算独立一条 -->
+    <div class="verify-block">
+      <div class="verify-title">平时计算（独立参考）</div>
+      <div class="verify-row">
+        <span class="vk">C ÷ 0.04 × 100</span>
+        <span class="vv accent" id="result004">—</span>
+      </div>
+    </div>
+
+    <!-- 计算过程 -->
+    <div class="formula-block" id="formulaBlock"></div>
+  </div>
+</div>
+
+<script>
+function calculate(){
+  const A = parseFloat(document.getElementById("inputA").value);
+  const C = parseFloat(document.getElementById("inputC").value);
+  const D = parseFloat(document.getElementById("inputD").value);
+
+  if(isNaN(A) || isNaN(C) || isNaN(D)){
+    alert("请输入有效的实际装量、规格中限和残余成分");
+    return;
+  }
+
+  // 主计算
+  const B = A * 0.91;
+  const temp = (C - D) / 100 / 0.66 / 0.95;
+  const result = temp * 1000 * B;
+
+  // 额外加量：按比例 C/0.04×100（已知0.04对应100kg）
+  const result004 = (C / 0.04) * 100;
+
+  document.getElementById("result004").textContent = Math.round(result004) + " kg";
+  document.getElementById("resultVal").textContent = Math.round(result);
+
+  // 计算过程
+  document.getElementById("formulaBlock").innerHTML =
+    `<span>主计算：</span><br>` +
+    `出钢量 B = ${A} × 0.91 = ${B.toFixed(4)} t<br>` +
+    `中间值 = (${C} - ${D}) / 100 / 0.66 / 0.95 = ${temp.toFixed(8)}<br>` +
+    `硅锰用量 = ${temp.toFixed(8)} × 1000 × ${B.toFixed(4)} = <span style="color:var(--accent2)">${Math.round(result)} kg</span><br>` +
+    `<br><span>平时计算（独立）：</span><br>` +
+    `${C} ÷ 0.04 × 100 = <span style="color:var(--accent2)">${Math.round(result004)} kg</span>`;
+
+  document.getElementById("resultCard").classList.add("show");
+}
+
+// 回车触发计算
+document.addEventListener("keydown", e=>{ if(e.key==="Enter") calculate(); });
+</script>
+</body>
+</html>
