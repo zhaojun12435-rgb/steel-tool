@@ -7,7 +7,328 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
 
+:root{<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>下一炉生成器 · SteelTool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
 :root{
+  --bg:#0d0f14;--surface:#161b24;--border:#252d3a;
+  --accent:#e07b00;--accent2:#ff9f1c;--steel:#8fa3b1;
+  --text:#d4dce5;--text-dim:#5a6a78;--danger:#ff4d4f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px}
+body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,0.015) 39px,rgba(255,255,255,0.015) 40px);pointer-events:none;z-index:0}
+
+.container{position:relative;z-index:1;max-width:900px;margin:0 auto}
+
+/* 顶部导航 */
+.topbar{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 0 20px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:24px;
+}
+.back-btn{
+  text-decoration:none;color:var(--text-dim);font-size:13px;
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border:1px solid var(--border);border-radius:6px;
+  transition:all 0.15s;
+}
+.back-btn:hover{color:var(--text);border-color:var(--accent)}
+.page-title{
+  font-family:'Rajdhani',sans-serif;
+  font-size:22px;font-weight:700;letter-spacing:2px;color:#fff;
+}
+.page-title span{color:var(--accent)}
+
+.section-label{
+  font-size:11px;letter-spacing:2px;color:var(--text-dim);
+  text-transform:uppercase;margin:20px 0 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label .n{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--accent);color:#000;
+  font-size:11px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+textarea{
+  width:100%;font-size:13px;line-height:1.9;
+  padding:12px 14px;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;
+  resize:vertical;font-family:'Noto Sans SC',Consolas,monospace;
+  transition:border 0.2s;
+}
+textarea:focus{outline:none;border-color:var(--accent)}
+textarea::placeholder{color:var(--text-dim)}
+
+.row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.row input{
+  width:90px;font-size:15px;padding:8px 12px;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;text-align:center;
+  font-family:inherit;transition:border 0.2s;
+}
+.row input:focus{outline:none;border-color:var(--accent)}
+.row span{font-size:13px;color:var(--steel)}
+
+.btn-row{display:flex;gap:12px;margin-top:24px}
+.btn{
+  flex:1;padding:14px 0;font-size:15px;font-weight:500;
+  border:none;border-radius:8px;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;
+  transition:all 0.15s;letter-spacing:1px;
+}
+.btn-main{background:var(--accent);color:#000}
+.btn-main:hover{background:var(--accent2)}
+.btn-copy{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-copy:hover{border-color:var(--accent);color:var(--accent)}
+.btn-copy.copied{background:rgba(82,196,26,0.1);border-color:#52c41a;color:#52c41a}
+
+.clear-btn{
+  margin-top:8px;padding:7px 14px;font-size:12px;letter-spacing:1px;
+  background:transparent;color:var(--danger);
+  border:1px solid rgba(255,77,79,0.3);border-radius:6px;cursor:pointer;
+  transition:all 0.15s;font-family:inherit;
+}
+.clear-btn:hover{background:rgba(255,77,79,0.1)}
+
+.toast{
+  display:none;position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%);
+  background:#1e2530;color:var(--text);
+  border:1px solid var(--border);
+  padding:10px 22px;border-radius:8px;
+  font-size:13px;z-index:999;pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <a class="back-btn" href="index.html">← 返回首页</a>
+    <div class="page-title">🔥 下一炉<span>生成器</span></div>
+  </div>
+
+  <div class="section-label"><span class="n">1</span> 炼钢工作群工艺记录表</div>
+  <textarea id="record" rows="18" placeholder="粘贴当前炉工艺记录..."></textarea>
+
+  <button class="clear-btn" onclick="clearRecord()">清除工艺记录</button>
+
+  <div class="section-label"><span class="n">2</span> 钢包周转计划表</div>
+  <textarea id="ladle" rows="7" placeholder="支持两种格式：
+① 1#钢包 包龄3 120t
+② 11号包龄21次炉号01760出钢量165吨"></textarea>
+  <button class="clear-btn" onclick="clearLadle()">清除钢包计划表</button>
+
+  <div class="section-label"><span class="n">3</span> 出钢时间增加（分钟）</div>
+  <div class="row">
+    <input id="addMinute" type="number" value="40" min="0" max="240">
+    <span>分钟</span>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-main" onclick="nextHeat()">⚙ 一键生成下一炉</button>
+    <button class="btn btn-copy" id="copyBtn" onclick="copyText()">复制内容</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let ladles=[];
+
+function normalize(text){
+  return text
+    .replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/[Ａ-Ｚａ-ｚ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/[：﹕︓]/g,':')
+    .replace(/＃/g,'#')
+    .replace(/吨/g,'t')
+    .replace(/　/g,' ');
+}
+
+function parseLadles(){
+  ladles=[];
+  normalize(document.getElementById("ladle").value).split(/\n/).forEach(l=>{
+    l=l.trim();
+    if(!l) return;
+    let no, age, ton, heatNo;
+    // 格式2：11号包龄21次炉号01760出钢量165吨
+    let m2=l.match(/(\d+)\s*号\s*包龄\s*(\d+)\s*次.*?炉号\s*(\d+).*?出钢量\s*(\d+)\s*[t吨]/i);
+    // 格式1：1#钢包 包龄3 120t 或 1号钢包 包龄3 120t
+    let m1=l.match(/(\d+)[#号].*?包龄\s*(\d+).*?(\d+)\s*[t吨]/i);
+    if(m2){ no=m2[1]; age=Number(m2[2]); heatNo=m2[3]; ton=Number(m2[4]); }
+    else if(m1){ no=m1[1]; age=Number(m1[2]); ton=Number(m1[3]); }
+    if(no!==undefined) ladles.push({no, age, ton, heatNo});
+  });
+}
+
+function clearRecord(){document.getElementById("record").value=""}
+function clearLadle(){document.getElementById("ladle").value=""}
+
+// 随机一个0~9的数字，但不等于 exclude
+function randDigitExclude(exclude){
+  let d;
+  do{ d=Math.floor(Math.random()*10); }while(d===exclude);
+  return d;
+}
+
+// 保持十位，个位随机且不等于旧个位
+function randomLastDigitDiff(num){
+  let oldDigit = num % 10;
+  let newDigit = randDigitExclude(oldDigit);
+  if(num<10) return Math.max(1, newDigit===0 ? 1 : newDigit);
+  return Math.floor(num/10)*10 + newDigit;
+}
+
+function addTime(text,addMin){
+  return text.replace(/出钢时间\s*:\s*(\d{1,2})\s*:\s*(\d{1,2})/,(_, h,m)=>{
+    let d=new Date();
+    d.setHours(Number(h),Number(m),0,0);
+    d.setMinutes(d.getMinutes()+addMin);
+    let hh=String(d.getHours()).padStart(2,"0");
+    let mm=String(d.getMinutes()).padStart(2,"0");
+    return `出钢时间:      ${hh}   :  ${mm}`;
+  });
+}
+
+// 合金下料时间：随机但不等于旧值
+function updateAlloyTime(text){
+  return text.replace(/合金下料时间\s*:\s*(\d+)/,(_, oldNum)=>{
+    let v=Number(oldNum);
+    let newV;
+    let oldDigit = v % 10;
+    if(v>=50&&v<=59){
+      // 50~55范围内随机，且不等于旧值
+      do{ newV=50+Math.floor(Math.random()*6); }while(newV===v);
+    } else {
+      let newDigit = randDigitExclude(oldDigit);
+      newV = Math.floor(v/10)*10 + newDigit;
+    }
+    return `合金下料时间:   ${newV}`;
+  });
+}
+
+// 实际装量计算规则
+function calcActualWeight(ton, text){
+  const rand22 = () => Math.floor(Math.random() * 5) - 2; // -2 ~ +2
+
+  if(ton === 165){
+    return 165 + [15, 16, 17][Math.floor(Math.random() * 3)];
+  }
+
+  if(ton === 170 || ton === 175){
+    let gradeMatch = text.match(/钢\s*种\s*:\s*([^\n\s]+)/);
+    let grade = gradeMatch ? gradeMatch[1] : "";
+    if(grade.includes("355")){
+      return Math.round(ton * 1.063) + rand22();
+    } else if(grade.includes("235")){
+      return Math.round(ton * 1.07) + rand22();
+    } else {
+      return ton + 5 + rand22();
+    }
+  }
+
+  if(ton === 180){
+    return 180 + 5 + rand22();
+  }
+
+  return ton + 5;
+}
+
+// 终点氮含量：随机但不等于旧值（兼容整数和小数格式）
+const nitrogenValues=["0.003","0.0023","0.0017","0.0028","0.0014"];
+function updateNitrogen(text){
+  return text.replace(/终点氮含量\s*:\s*(\S+)/,(full, oldVal)=>{
+    let candidates = nitrogenValues.filter(v=>v!==oldVal);
+    let newVal = candidates[Math.floor(Math.random()*candidates.length)];
+    return `终点氮含量：    ${newVal}`;
+  });
+}
+
+function nextHeat(){
+  let raw=document.getElementById("record").value;
+  if(!raw.trim()){showToast("⚠ 请先粘贴当前炉工艺记录");return}
+  parseLadles();
+  let addMin=Number(document.getElementById("addMinute").value)||40;
+  let t=normalize(raw);
+
+  t=t.replace(/第\s*(\d+)\s*炉/,(_,n)=>`第   ${+n+1}   炉`);
+  t=t.replace(/炉号\s*:\s*(\d+)/,(_,n)=>`炉号：${+n+1}`);
+  t=addTime(t,addMin);
+  t=updateAlloyTime(t);
+
+  // 合金用量：个位随机，但不等于上一炉个位
+  ["硅锰","硅铁","铝铁","低碳锰铁","金属锰","低锰","高碳铬铁","高铬","铬铁"].forEach(a=>{
+    t=t.replace(new RegExp(`${a}\\s*:\\s*(\\d+)`,"g"),(_,num)=>{
+      let n=Number(num);
+      let newN=randomLastDigitDiff(n);
+      return `${a}：       ${newN}`;
+    });
+  });
+
+  let carbonMatch=t.match(/终点碳\s*:\s*(\d+)/);
+  if(carbonMatch){
+    let carbon=Number(carbonMatch[1]);
+    t=carbon<=7
+      ?t.replace(/\/\s*\d+\s*包/,"/   0包")
+      :t.replace(/\/\s*\d+\s*包/,`/   ${Math.floor(Math.random()*5)+10}包`);
+  }
+
+  // 终点氮含量：不等于上一炉
+  t=updateNitrogen(t);
+
+  if(ladles.length>0){
+    let cur=t.match(/钢\s*包\s*号\s*:\s*(\d+)/);
+    let idx=-1;
+    if(cur){
+      idx=ladles.findIndex(l=>l.no===cur[1]);
+      if(idx===-1) showToast(`⚠ 钢包号 ${cur[1]}# 未在计划表中找到，从第1个开始`);
+    }
+    let next=ladles[(idx+1)%ladles.length];
+    t=t.replace(/钢\s*包\s*号\s*:\s*\d+/,`钢 包 号：      ${next.no}`);
+    t=t.replace(/包\s*龄\s*:\s*\d+/,`包      龄：      ${next.age}`);
+    t=t.replace(/要\s*求钢量\s*:\s*\d+/,`要 求钢量：     ${next.ton}`);
+    t=t.replace(/实\s*际装量\s*:\s*\d+/,`实 际装量：     ${calcActualWeight(next.ton, t)}`);
+  }
+
+  document.getElementById("record").value=t;
+}
+
+function copyText(){
+  let text=document.getElementById("record").value;
+  if(!text.trim()){showToast("⚠ 内容为空");return}
+  navigator.clipboard.writeText(text).then(()=>{
+    let btn=document.getElementById("copyBtn");
+    btn.textContent="✅ 已复制";btn.classList.add("copied");
+    setTimeout(()=>{btn.textContent="复制内容";btn.classList.remove("copied")},2000);
+  }).catch(()=>{
+    let ta=document.createElement("textarea");ta.value=text;
+    document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);
+    showToast("已复制到剪贴板");
+  });
+}
+
+function showToast(msg){
+  let el=document.getElementById("toast");
+  el.textContent=msg;el.style.display="block";
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.style.display="none"},2500);
+}
+</script>
+</body>
+</html>
+
   --bg:#0d0f14;--surface:#161b24;--border:#252d3a;
   --accent:#e07b00;--accent2:#ff9f1c;--steel:#8fa3b1;
   --text:#d4dce5;--text-dim:#5a6a78;--danger:#ff4d4f;
