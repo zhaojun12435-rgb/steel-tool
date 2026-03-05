@@ -339,7 +339,9 @@ function updateAlloyTime(text){
 function calcActualWeight(ton, text){
   const rand22 = () => Math.floor(Math.random() * 5) - 2;
   let result;
-  if(ton === 165){
+  if(ton === 160){
+    result = 160 + [15, 16][Math.floor(Math.random() * 2)];
+  } else if(ton === 165){
     result = 165 + [15, 16, 17][Math.floor(Math.random() * 3)];
   } else if(ton === 170 || ton === 175){
     let gradeMatch = text.match(/钢\s*种\s*:\s*([^\n\s]+)/);
@@ -424,11 +426,14 @@ function nextHeat(){
 
   // 碳粉包数
   if(autoState.carbonBags){
-    // 读取（可能刚被改写的）终点碳
-    let carbonMatch=t.match(/终点碳\s*:\s*(\d+)/);
-    if(carbonMatch){
-      let carbon=Number(carbonMatch[1]);
-      let bags = carbon<=7 ? 0 : Math.max(0,(targetCarbon-carbon)*2);
+    // 若填了下一炉终点碳，用它代入公式；否则用记录里的终点碳
+    let carbonForCalc = nextCarbonInput !== "" ? Number(nextCarbonInput) : null;
+    if(carbonForCalc === null){
+      let carbonMatch=t.match(/终点碳\s*:\s*(\d+)/);
+      if(carbonMatch) carbonForCalc = Number(carbonMatch[1]);
+    }
+    if(carbonForCalc !== null){
+      let bags = carbonForCalc<=7 ? 0 : Math.max(0,(targetCarbon-carbonForCalc)*2);
       t=t.replace(/\/\s*\d+\s*包/,`/   ${bags}包`);
     }
   }
