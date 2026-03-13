@@ -108,16 +108,14 @@ body::before{content:'';position:fixed;inset:0;background-image:repeating-linear
       <div><span class="result-value" id="resultVal">—</span><span class="result-unit">kg</span></div>
     </div>
 
-    <!-- 平时计算独立一条 -->
     <div class="verify-block">
       <div class="verify-title">平时计算（独立参考）</div>
       <div class="verify-row">
-        <span class="vk">元素成分 ÷ 0.05 × 100</span>
+        <span class="vk">（元素成分 - 终点残余成分）÷ 0.05 × 100</span>
         <span class="vv accent" id="result005">—</span>
       </div>
     </div>
 
-    <!-- 计算过程 -->
     <div class="formula-block" id="formulaBlock"></div>
   </div>
 </div>
@@ -138,8 +136,8 @@ function calculate(){
   const temp = (C - D) / 100 / 0.87 / 0.95;
   const result = temp * 1000 * B;
 
-  // 平时计算（独立）：C / 0.05 × 100
-  const result005 = (C / 0.05) * 100;
+  // 平时计算（独立）：(C - D) / 0.05 × 100
+  const result005 = ((C - D) / 0.05) * 100;
 
   document.getElementById("resultVal").textContent = Math.round(result);
   document.getElementById("result005").textContent = Math.round(result005) + " kg";
@@ -150,7 +148,7 @@ function calculate(){
     `中间值 = (${C} - ${D}) / 100 / 0.87 / 0.95 = ${temp.toFixed(8)}<br>` +
     `低碳锰铁用量 = ${temp.toFixed(8)} × 1000 × ${B.toFixed(4)} = <span style="color:var(--accent2)">${Math.round(result)} kg</span><br>` +
     `<br><span>平时计算（独立）：</span><br>` +
-    `${C} ÷ 0.05 × 100 = <span style="color:var(--accent2)">${Math.round(result005)} kg</span>`;
+    `(${C} - ${D}) ÷ 0.05 × 100 = <span style="color:var(--accent2)">${Math.round(result005)} kg</span>`;
 
   document.getElementById("resultCard").classList.add("show");
 }
